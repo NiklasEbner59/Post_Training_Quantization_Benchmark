@@ -2,42 +2,42 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Professionellen, wissenschaftlichen Plot-Style laden
+# Consistent styling for all plots
 plt.style.use('seaborn-v0_8-whitegrid')
 
-# Ermittelt den Ordner, in dem dieses Skript selbst liegt
+# Base directory for file paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Daten mit absolutem Pfad einlesen
+# load benchmark data for both models
 file_i8 = os.path.join(BASE_DIR, 'benchmark_int8.csv')
 file_f32 = os.path.join(BASE_DIR, 'benchmark_float32.csv')
 
 df_i8 = pd.read_csv(file_i8)
 df_f32 = pd.read_csv(file_f32)
 
-# Latenz-Verarbeitung: Nanosekunden in Millisekunden umrechnen
+# Convert latency from nanoseconds to milliseconds for better readability
 df_i8['Latency_ms'] = df_i8['Latency_ns'] / 1_000_000.0
 df_f32['Latency_ms'] = df_f32['Latency_ns'] / 1_000_000.0
 
-# Relative Zeitachse in Sekunden berechnen
+# Calculate elapsed time in seconds from the initial timestamp for both datasets
 df_i8['Time_s'] = (df_i8['Timestamp_ms'] - df_i8['Timestamp_ms'].iloc[0]) / 1000.0
 df_f32['Time_s'] = (df_f32['Timestamp_ms'] - df_f32['Timestamp_ms'].iloc[0]) / 1000.0
 
-# Temperatur-Daten auf 1-Sekunden-Intervalle runden für glattere Kurven
+# Round temperature values to 1 decimal place for cleaner visualization
 df_i8['Time_s_int'] = df_i8['Time_s'].round().astype(int)
 df_f32['Time_s_int'] = df_f32['Time_s'].round().astype(int)
 
 temp_i8_mean = df_i8.groupby('Time_s_int')['Temp_C'].mean()
 temp_f32_mean = df_f32.groupby('Time_s_int')['Temp_C'].mean()
 
-# Globale Farb- und Labeldefinitionen für Konsistenz
+# Global styling parameters for all plots
 colors = ['#e74c3c', '#2ecc71']
 labels = ['Float32 (Original)', 'Int8 (Quantized)']
 bbox_props = dict(boxstyle="round,pad=0.5", fc="white", ec="black", lw=1.5, alpha=0.9)
 
 
 # ==============================================================================
-# DIAGRAMM 1: TEMPERATURE TREND (Thermischer Fußabdruck & Delta)
+# DIAGRAM 1: TEMPERATURE TREND
 # ==============================================================================
 fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -52,11 +52,11 @@ ax.set_title('Thermal Behavior During 10-Minute Stress Test', fontsize=14, fontw
 ax.grid(True, linestyle='--', alpha=0.5)
 ax.legend(fontsize=11, loc='upper left', frameon=True, facecolor='white', framealpha=0.9)
 
-# Achsenskalierung zur optimalen Visualisierung der Stufen
+# Scaling the axes to focus on the relevant temperature range and time window
 ax.set_xlim(0, 10.1)
 ax.set_ylim(26.5, 32)
 
-# Thermische Berechnungen für die Infobox
+# Calculating key temperature metrics for the annotation box
 start_temp = temp_f32_mean.iloc[0]
 max_f32 = temp_f32_mean.max()
 max_i8 = temp_i8_mean.max()
@@ -76,7 +76,7 @@ plt.close()
 
 
 # ==============================================================================
-# DIAGRAMM 2: LATENCY COMPARISON (Bereinigt ohne Fehlerlinien)
+# DIAGRAM 2: LATENCY COMPARISON
 # ==============================================================================
 mean_f32 = df_f32['Latency_ms'].mean()
 mean_i8 = df_i8['Latency_ms'].mean()
@@ -92,7 +92,7 @@ ax.set_title('MobileNetV2: Inference Latency Performance Gain', fontsize=14, fon
 ax.set_ylim(0, 25)
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 
-# Datenbeschriftungen direkt über den Balken platzieren (Mittelwert & Sigma)
+# Place exact latency values and standard deviation on top of each bar
 for bar, std in zip(bars, stds):
     height = bar.get_height()
     ax.annotate(f'{height:.2f} ms\n(σ: {std:.2f} ms)',
@@ -100,7 +100,7 @@ for bar, std in zip(bars, stds):
                 xytext=(0, 6), textcoords="offset points",
                 ha='center', va='bottom', fontsize=11, fontweight='bold')
 
-# Speedup-Box hinzufügen
+# Adding the speedup box annotation
 ax.text(0.5, 18, f"Speedup:\nx{speedup:.1f}", ha="center", va="center", size=13,
         fontweight='bold', bbox=bbox_props)
 
@@ -110,7 +110,7 @@ plt.close()
 
 
 # ==============================================================================
-# DIAGRAMM 3: THROUGHPUT COMPARISON (Gesamtausführungen)
+# DIAGRAM 3: THROUGHPUT COMPARISON
 # ==============================================================================
 count_f32 = len(df_f32)
 count_i8 = len(df_i8)
@@ -125,10 +125,10 @@ ax.set_title('MobileNetV2: Total Executions within 10-Minute Window', fontsize=1
 ax.set_ylim(0, 105000)
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 
-# Tausender-Trennzeichen für die Y-Achse formatieren (z.B. 80,000 statt 80000)
+# Format y-axis with commas for thousands
 ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
 
-# Exakte Zahlen auf die Balken schreiben
+# Write the exact count values on top of each bar
 for bar in bars:
     height = bar.get_height()
     ax.annotate(f'{height:,}',
@@ -136,7 +136,7 @@ for bar in bars:
                 xytext=(0, 6), textcoords="offset points",
                 ha='center', va='bottom', fontsize=11, fontweight='bold')
 
-# Durchsatz-Gewinn Box hinzufügen
+# Adding the percentage increase box annotation
 ax.text(0.5, 75000, f"Throughput Increase:\n+{pct_increase:.1f}%", ha="center", va="center", size=13,
         fontweight='bold', bbox=bbox_props)
 
